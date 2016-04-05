@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/take_photo"
+        android:title="@string/import_from_camera">
+    </item>
+    <item
+        android:id="@+id/get_from_gallery"
+        android:title="@string/import_from_gallery">
+    </item>
+    <item
+        android:id="@+id/set_background"
+        android:title="@string/import_from_backgrounds">
+    </item>
+</menu>

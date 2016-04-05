@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">MagicPainter for kids</string>
+    <string name="share_choose">Which one?</string>
+
+    <string name="import_from_camera">Take a photo!</string>
+    <string name="import_from_gallery">Get from gallery!</string>
+    <string name="import_from_backgrounds">Backgrounds</string>
+
+    <string name="remove_ads">Remove ads</string>
+    <string name="animal_pack_1">Animal pack 1</string>
+    <string name="animal_pack_2">Animal pack 2</string>
+    <string name="animal_pack_3">Animal pack 3</string>
+
+    <string name="pencil_chooser">Choose a nice pencil!</string>
+    <string name="background_chooser">Choose a nice background!</string>
+
+    <string name="draw">Draw!</string>
+    <string name="draw_background">Draw with background!</string>
+    <string name="shop">Shop</string>
+
+    <string name="get_more_backgrounds">Get more backgrounds!</string>
+    <string name="document_saved">The image has been saved!</string>
+
+    <string name="are_you_sure">Do you really want to clear this canvas?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No!</string>
+
+    <string name="delete_canvas">Clear canvas</string>
+
+</resources>
