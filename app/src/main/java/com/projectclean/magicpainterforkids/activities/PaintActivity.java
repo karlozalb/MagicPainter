@@ -32,6 +32,7 @@ import com.appodeal.ads.Appodeal;
 import com.caverock.androidsvg.PreserveAspectRatio;
 import com.caverock.androidsvg.SVG;
 import com.caverock.androidsvg.SVGParseException;
+import com.google.android.gms.analytics.HitBuilders;
 import com.projectclean.magicpainterforkids.R;
 import com.projectclean.magicpainterforkids.Router;
 import com.projectclean.magicpainterforkids.billingutils.IabHelper;
@@ -47,6 +48,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+
+import javax.xml.datatype.Duration;
 
 /**
  * Created by Carlos Albaladejo Pérez on 13/03/2016.
@@ -64,7 +67,7 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
     private ImageView[] mPencilImageViews;
     private SeekBar mPencilSizeSeekBar;
 
-    private ImageButton mSaveButton,mShareButton,mPaintBucketButton,mUndoButton,mRedoButton,mCameraButton,mPencilButton,mDeleteButton;
+    private ImageButton mSaveButton,mShareButton,mPaintBucketButton,mUndoButton,mRedoButton,mCameraButton,mPencilButton,mDeleteButton, mNormalModebutton;
 
     private int mBackgroundId = -1;
 
@@ -88,6 +91,8 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
     private String mCurrentFilename;
 
     private MediaPlayer mBlopSound,mHornSound;
+
+    private boolean mAdShowed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +118,9 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
 
         mUndoButton  = (ImageButton)findViewById(R.id.undo_button);
         mRedoButton = (ImageButton)findViewById(R.id.redo_button);
+
+        mNormalModebutton = (ImageButton)findViewById(R.id.normal_mode_button);
+        mNormalModebutton.setVisibility(View.GONE);
 
         mPencilSizeSeekBar = (SeekBar)findViewById(R.id.pencil_size_seekbar);
         mPencilSizeSeekBar.setMax(12);
@@ -166,12 +174,10 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             }
         });
 
-        if (!mNoAds){
-            Appodeal.show(this, Appodeal.INTERSTITIAL);
-        }
-
         mBlopSound = MediaPlayer.create(this, R.raw.blop);
         mHornSound = MediaPlayer.create(this, R.raw.horn);
+
+        mFirstTime = true;
     }
 
     @Override
@@ -181,12 +187,17 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             chooserAlreadyShowed = true;
             showBackgroundChooser();
         }
+
+        if (!mNoAds && !mAdShowed){
+            mAdShowed = true;
+            Appodeal.show(this, Appodeal.INTERSTITIAL);
+        }
     }
 
     private ArrayList<String> getPurchasedBackgrounds(){
         ArrayList<String> products = new ArrayList<String>();
 
-        if (mAnimalPack1){
+        if (mExtraPack1){
             products.add("image_0001");
             products.add("image_0002");
             products.add("image_0003");
@@ -194,7 +205,7 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             products.add("image_0005");
         }
 
-        if (mAnimalPack2){
+        if (mExtraPack2){
             products.add("image_0006");
             products.add("image_0007");
             products.add("image_0008");
@@ -228,9 +239,10 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
                     mMMPermission.requestPermissionForExternalStorage();
                 }else{
                     if (mCurrentFilename == null) mCurrentFilename = BitmapUtils.getUniqueFilename();
-                    BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap()),mCurrentFilename);
+                    BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap(),BitmapFactory.decodeResource(getResources(),R.raw.watermark)),mCurrentFilename);
                     showSnackBarMessage(getResources().getString(R.string.document_saved),3000);
                 }
+                sendSaveEvent();
             }
         });
 
@@ -239,13 +251,14 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             public void onClick(View v) {
                 if (mCurrentFilename == null) mCurrentFilename = BitmapUtils.getUniqueFilename();
                 playBlopSound();
-                File f = new File(BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap()),mCurrentFilename));
+                File f = new File(BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap(),BitmapFactory.decodeResource(getResources(),R.raw.watermark)),mCurrentFilename));
 
                 Intent shareIntent = new Intent();
                 shareIntent.setAction(Intent.ACTION_SEND);
                 shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(f));
                 shareIntent.setType("image/jpeg");
                 startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.share_choose)));
+                sendShareEvent();
             }
         });
 
@@ -273,6 +286,7 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             public void onClick(View v) {
                 playBlopSound();
                 Router.showPencilChooserFragmentDialog(PaintActivity.this);
+                sendPencilChooserEvent();
             }
         });
 
@@ -304,6 +318,10 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             });
         }
 
+        //Seleccionamos el color rojo de base.
+        mDrawingView.setCurrentColor((int) mPencilImageViews[2].getTag());
+        moveViewUp(mPencilImageViews[2]);
+
         mPencilSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -318,6 +336,13 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+
+        mNormalModebutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setCurrentPencil(-1);
             }
         });
     }
@@ -349,13 +374,16 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
     public boolean onMenuItemClick(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.take_photo:
+                sendPhotoEvent();
                 dispatchTakePictureIntent();
                 return true;
             case R.id.get_from_gallery:
+                sendGalleryEvent();
                 dispatchPictureFromGallery();
                 return true;
             case R.id.set_background:
                 //Router.startImageSelectionActivity(this);
+                sendBackgroundChooserEvent();
                 showBackgroundChooser();
                 return true;
             default:
@@ -399,7 +427,6 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
     public void onResume(){
         super.onResume();
 
-
         if (Build.VERSION.SDK_INT >= 23 ) {
             if (mCameraPermissionRequested) {
                 mCameraPermissionRequested = false;
@@ -415,12 +442,17 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             } else if (mExternalStoragePermissionRequestedForSave) {
                 mExternalStoragePermissionRequestedForSave = false;
                 if (mCurrentFilename != null) mCurrentFilename = BitmapUtils.getUniqueFilename();
-                BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap()),mCurrentFilename);
+                BitmapUtils.saveBitmapToMediaDirectory(PaintActivity.this, BitmapUtils.merge(mBackgroundView.getBitmap(), mDrawingView.getBitmap(),BitmapFactory.decodeResource(getResources(),R.raw.watermark)),mCurrentFilename);
             }
         }
 
         if (mIABSetupFinished && !mFirstTime){
             getPurchasedProducts();
+        }
+
+        if (mFirstTime){
+            mTracker.setScreenName(PAINTACTIVITY);
+            mTracker.send(new HitBuilders.ScreenViewBuilder().build());
         }
 
         mFirstTime = false;
@@ -564,8 +596,11 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
     public void setCurrentPencil(int presource){
         if (presource == -1){
             mDrawingView.disablePencilMode();
+            mNormalModebutton.setVisibility(View.GONE);
+            showSnackBarMessage(getString(R.string.normal_drawing_mode),3000);
         }else {
             mDrawingView.setPencilMode(presource);
+            mNormalModebutton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -608,5 +643,61 @@ public class PaintActivity extends RootActivity implements PopupMenu.OnMenuItemC
             mHornSound = MediaPlayer.create(this, R.raw.horn);
         }
         mHornSound.start();
+    }
+
+    public void sendSaveEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("Save")
+                .build());
+    }
+
+    public void sendShareEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("Share")
+                .build());
+    }
+
+    public void sendPhotoEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("Photo")
+                .build());
+    }
+
+    public void sendGalleryEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("Gallery")
+                .build());
+    }
+
+    public void sendBackgroundChooserEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("BackgroundChooser")
+                .build());
+    }
+
+    public void sendPencilChooserEvent(){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("PencilChooser")
+                .build());
+    }
+
+    public void sendBackgroundEvent(String pbackgroundevent){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("BackgroundSelect")
+                .setAction(pbackgroundevent)
+                .build());
+    }
+
+    public void sendPencilEvent(String ppencilevent){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("PencilSelect")
+                .setAction(ppencilevent)
+                .build());
     }
 }

@@ -3,9 +3,6 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/pencil_image_view"
-        android:layout_width="80dp"
-        android:layout_height="80dp" />
+
 
 </LinearLayout>

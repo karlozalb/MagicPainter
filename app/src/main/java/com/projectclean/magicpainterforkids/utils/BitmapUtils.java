@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaScannerConnection;
@@ -65,11 +68,29 @@ public class BitmapUtils {
         return fullFilename;
     }
 
-    public static Bitmap merge(Bitmap pbackground,Bitmap pmain){
+    public static Bitmap merge(Bitmap pbackground,Bitmap pmain,Bitmap pwatermark){
         Bitmap bmOverlay = Bitmap.createBitmap(pbackground.getWidth(), pbackground.getHeight(), pbackground.getConfig());
         Canvas canvas = new Canvas(bmOverlay);
         canvas.drawBitmap(pbackground, new Matrix(), null);
         canvas.drawBitmap(pmain, new Matrix(), null);
+
+        Rect src = new Rect(0,0,pwatermark.getWidth(),pwatermark.getHeight());
+
+        float ratio = (float)pwatermark.getHeight()/(float)pwatermark.getWidth();
+
+        int dstLeft = (int)(pbackground.getWidth() - pbackground.getWidth()/3f);
+        int dstTop = (int)(pbackground.getHeight() - ratio * pbackground.getWidth()/3f);
+        int dstRight = pbackground.getWidth();
+        int dstBot = pbackground.getHeight();
+
+        Rect dst = new Rect(dstLeft,dstTop,dstRight,dstBot);
+
+        Paint paint = new Paint(Paint.DITHER_FLAG);
+
+        canvas.drawBitmap(pwatermark,src,dst,paint);
+
+        pwatermark.recycle();
+
         return bmOverlay;
     }
 

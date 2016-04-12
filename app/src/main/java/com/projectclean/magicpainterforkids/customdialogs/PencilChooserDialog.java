@@ -28,6 +28,8 @@ public class PencilChooserDialog extends DialogFragment {
 
     ImageAdapter mAdapter;
 
+    LinkedList<String> mPencilsFriendlyNames;
+
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
@@ -37,6 +39,8 @@ public class PencilChooserDialog extends DialogFragment {
         cftv.setText(getString(R.string.pencil_chooser));
 
         builder.setView(v).setCustomTitle(cftv);
+
+        mPencilsFriendlyNames = new LinkedList<String>();
 
         mAdapter = new ImageAdapter(getActivity(),getActivity().getLayoutInflater());
         mAdapter.setResources(listRaw());
@@ -51,7 +55,9 @@ public class PencilChooserDialog extends DialogFragment {
                     ((PaintActivity) getActivity()).setCurrentPencil(-1);
                 }else{
                     ((PaintActivity) getActivity()).setCurrentPencil((int) mAdapter.getItem(position));
+                    ((PaintActivity) getActivity()).sendPencilEvent(mPencilsFriendlyNames.get(position-1));
                 }
+
                 dismiss();
             }
         });
@@ -69,6 +75,7 @@ public class PencilChooserDialog extends DialogFragment {
             try {
                 if (fields[count].getName().contains("pencil_")) {
                     resources.add(fields[count].getInt(fields[count]));
+                    mPencilsFriendlyNames.add(fields[count].getName());
                 }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

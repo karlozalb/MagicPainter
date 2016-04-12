@@ -2,6 +2,8 @@ package com.projectclean.magicpainterforkids.customdialogs;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
@@ -11,7 +13,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
 import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Spinner;
 
 import com.caverock.androidsvg.SVG;
 import com.caverock.androidsvg.SVGImageView;
@@ -40,9 +46,11 @@ public class BackgroundChooserDialog extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_background_chooser_dialog, null);
+        v.setBackgroundColor(Color.WHITE);
 
         CustomFontTextView cftv = (CustomFontTextView)LayoutInflater.from(getActivity()).inflate(R.layout.dialog_title_textview, null);
         cftv.setText(getString(R.string.background_chooser));
+        cftv.setBackgroundColor(Color.WHITE);
 
         builder.setView(v).setCustomTitle(cftv);
 
@@ -71,7 +79,8 @@ public class BackgroundChooserDialog extends DialogFragment {
         gv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ((PaintActivity)getActivity()).setPic(null, (int) mAdapter.getItem(position));
+                ((PaintActivity)getActivity()).setPic(null, (int) mAdapter.getItemSVG(position));
+                ((PaintActivity)getActivity()).sendBackgroundEvent(mAdapter.getItemFriendlyName(position));
                 dismiss();
             }
         });
@@ -89,9 +98,21 @@ public class BackgroundChooserDialog extends DialogFragment {
         return builder.create();
     }
 
-    public LinkedList<Integer> listRaw(ArrayList<String> products){
-        Field[] fields=R.raw.class.getFields();
-        LinkedList<Integer> resources= new LinkedList<Integer>();
+    public LinkedList<ProductNode> listRaw(ArrayList<String> products){
+        LinkedList<ProductNode> resources= new LinkedList<ProductNode>();
+
+        for (String p : products) {
+            ProductNode pn =new ProductNode();
+            pn.SVG_ID = this.getResources().getIdentifier(p, "raw", getActivity().getPackageName());
+            pn.THUMBNAIL_ID = this.getResources().getIdentifier(p+"_jpg", "raw", getActivity().getPackageName());
+            pn.FRIENDLY_NAME = p;
+            resources.add(pn);
+        }
+
+        return resources;
+
+        /*Field[] fields=R.raw.class.getFields();
+        LinkedList<ProductNode> resources= new LinkedList<ProductNode>();
 
         for(int count=0; count < fields.length; count++){
             try {
@@ -105,15 +126,15 @@ public class BackgroundChooserDialog extends DialogFragment {
                 e.printStackTrace();
             }
         }
-        return resources;
+        return resources;*/
     }
 
     public class ImageAdapter extends BaseAdapter {
         private Context mContext;
         private LayoutInflater mInflater;
-        private LinkedList<Integer> mResources;
+        private LinkedList<ProductNode> mResources;
 
-        public ImageAdapter(Context c,LayoutInflater pinflater) {
+        public ImageAdapter(Context c, LayoutInflater pinflater) {
             mContext = c;
             mInflater = pinflater;
         }
@@ -122,12 +143,20 @@ public class BackgroundChooserDialog extends DialogFragment {
             return mResources.size();
         }
 
-        public void setResources(LinkedList<Integer> presources){
+        public void setResources(LinkedList<ProductNode> presources) {
             mResources = presources;
         }
 
         public Object getItem(int position) {
-            return mResources.get(position);
+            return mResources.get(position).THUMBNAIL_ID;
+        }
+
+        public Object getItemSVG(int position) {
+            return mResources.get(position).SVG_ID;
+        }
+
+        public String getItemFriendlyName(int position) {
+            return mResources.get(position).FRIENDLY_NAME;
         }
 
         public long getItemId(int position) {
@@ -138,28 +167,83 @@ public class BackgroundChooserDialog extends DialogFragment {
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 // if it's not recycled, initialize some attributes
-                convertView = new SVGImageView(mContext);
+                convertView = new ImageView(mContext);
                 int pixels = ScreenUtils.getPixelsFromDp((AppCompatActivity) mContext, 120);
                 convertView.setLayoutParams(new GridView.LayoutParams(pixels, pixels));
                 convertView.setBackgroundResource(R.drawable.gridview_item_background);
                 convertView.setPadding(8, 8, 8, 8);
             }
 
-            SVG svg = null;
-            try {
-                svg = SVG.getFromResource(mContext, mResources.get(position));
-            } catch (SVGParseException e) {
-                e.printStackTrace();
-            }
-            ((SVGImageView)convertView).setSVG(svg);
+            ((ImageView) convertView).setImageResource((int)mAdapter.getItem(position));
 
             return convertView;
         }
 
+        // create a new ImageView for each item referenced by the Adapter
+       /*public View getView(final int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                // if it's not recycled, initialize some attributes
+                convertView = mInflater.inflate(R.layout.background_item_layout,null);
+
+                SVGImageView svgView = new SVGImageView(mContext);
+                int pixels = ScreenUtils.getPixelsFromDp((AppCompatActivity) mContext, 120);
+                svgView.setLayoutParams(new GridView.LayoutParams(pixels, pixels));
+                svgView.setBackgroundResource(R.drawable.gridview_item_background);
+                svgView.setPadding(8, 8, 8, 8);
+
+                ((FrameLayout)convertView).addView(svgView);
+
+                ViewHolder vh = new ViewHolder();
+                vh.SVG_IMAGE_VIEW = svgView;
+                vh.SVG_SPINNER = (ProgressBar)convertView.findViewById(R.id.svg_spinner);
+
+                convertView.setTag(vh);
+            }
+
+           final ViewHolder vh = (ViewHolder)convertView.getTag();
+            vh.SVG_SPINNER.setVisibility(View.VISIBLE);
+            vh.SVG_IMAGE_VIEW.setVisibility(View.INVISIBLE);
+
+            AsyncTask<View, Void, SVG> task = new AsyncTask<View, Void, SVG>(){
+
+                View view;
+
+                @Override
+                protected SVG doInBackground(View... params) {
+                    view = params[0];
+                    SVG svg = null;
+                    try {
+                        svg = SVG.getFromResource(mContext, mResources.get(position));
+                    } catch (SVGParseException e) {
+                        e.printStackTrace();
+                    }
+
+                    return svg;
+                }
+
+                protected void onProgressUpdate(Void... progress) {
+                }
+
+                protected void onPostExecute(SVG result) {
+                    ((SVGImageView)view).setSVG(result);
+                    vh.SVG_IMAGE_VIEW.setVisibility(View.VISIBLE);
+                    vh.SVG_SPINNER.setVisibility(View.GONE);
+                }
+            }.execute(vh.SVG_IMAGE_VIEW);
+
+            return convertView;
+        }*/
+    }
+
+    public class ProductNode{
+        public int SVG_ID;
+        public int THUMBNAIL_ID;
+        public String FRIENDLY_NAME;
     }
 
     public class ViewHolder{
         public SVGImageView SVG_IMAGE_VIEW;
+        public ProgressBar SVG_SPINNER;
     }
 
 }

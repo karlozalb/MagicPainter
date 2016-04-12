@@ -7,6 +7,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.appodeal.ads.Appodeal;
+import com.google.android.gms.analytics.HitBuilders;
 import com.projectclean.magicpainterforkids.activities.RootActivity;
 import com.projectclean.magicpainterforkids.billingutils.IabHelper;
 import com.projectclean.magicpainterforkids.billingutils.IabResult;
@@ -14,6 +15,8 @@ import com.projectclean.magicpainterforkids.customviews.CustomFontButton;
 
 
 public class MainActivity extends RootActivity {
+
+    private boolean mIABSetupFinished,mFirstTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,9 +66,23 @@ public class MainActivity extends RootActivity {
                     Log.d("MPFK", "Problem setting up In-app Billing: " + result);
                     return;
                 }
+                mIABSetupFinished = true;
                 getPurchasedProducts();
             }
         });
+    }
+
+    public void onResume(){
+        super.onResume();
+
+        if (mIABSetupFinished && !mFirstTime){
+            getPurchasedProducts();
+        }
+
+        mTracker.setScreenName(MAINACTIVITY);
+        mTracker.send(new HitBuilders.ScreenViewBuilder().build());
+
+        mFirstTime = false;
     }
 
     @Override
@@ -74,7 +91,6 @@ public class MainActivity extends RootActivity {
             String appKey = "2828a4f2e70e62121d625edb019ebb36cf2ed80a3b08fec2";
             Appodeal.disableLocationPermissionCheck();
             Appodeal.initialize(this, appKey, Appodeal.INTERSTITIAL);
-            Appodeal.setTesting(true);
         }
     }
 }

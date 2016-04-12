@@ -158,6 +158,15 @@
             android:scaleType="fitXY"
             android:background="#00ffffff" />
 
+        <ImageButton
+            android:id="@+id/normal_mode_button"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:padding="5dp"
+            android:src="@drawable/pencil_icon"
+            android:scaleType="fitXY"
+            android:background="#00ffffff" />
+
     </LinearLayout>
 
     <LinearLayout

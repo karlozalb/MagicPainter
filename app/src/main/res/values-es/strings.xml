@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pintor mágico para niños</string>
+    <string name="share_choose">¿Con cual?</string>
+
+    <string name="import_from_camera">¡Haz una foto!</string>
+    <string name="import_from_gallery">¡Obtener de la galería!</string>
+    <string name="import_from_backgrounds">Fondos</string>
+
+    <string name="remove_ads">Quitar publicidad</string>
+    <string name="animal_pack_1">Animal pack 1</string>
+    <string name="animal_pack_2">Animal pack 2</string>
+    <string name="animal_pack_3">Animal pack 3</string>
+
+    <string name="pencil_chooser">¡Escoge un bonito pincel!</string>
+    <string name="background_chooser">¡Escoge un bonito fondo!</string>
+
+    <string name="draw">¡Dibujar!</string>
+    <string name="draw_background">Colorear (sobre fondo)</string>
+    <string name="shop">Tienda</string>
+
+    <string name="get_more_backgrounds">¡Obtener más fondos!</string>
+    <string name="document_saved">¡La imagen ha sido salvada!</string>
+
+    <string name="are_you_sure">¿Seguro que quieres limpiar el lienzo?</string>
+    <string name="yes">Si</string>
+    <string name="no">¡No!</string>
+
+    <string name="delete_canvas">Limpiar lienzo</string>
+    <string name="normal_drawing_mode">Modo sello desactivado</string>
+    <string name="empty_shoplist">Has comprado todos los productos disponibles, ¡muchísimas gracias!. Añadiré más muy pronto :)</string>
+
+</resources>

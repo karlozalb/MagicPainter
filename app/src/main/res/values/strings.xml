@@ -26,5 +26,7 @@
     <string name="no">No!</string>
 
     <string name="delete_canvas">Clear canvas</string>
+    <string name="normal_drawing_mode">Normal drawing restored!</string>
+    <string name="empty_shoplist">You have bought all the available products! thank you very much! I will add new ones as soon as possible :)</string>
 
 </resources>

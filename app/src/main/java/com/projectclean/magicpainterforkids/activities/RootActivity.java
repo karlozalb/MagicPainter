@@ -1,13 +1,19 @@
 package com.projectclean.magicpainterforkids.activities;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.Tracker;
+import com.projectclean.magicpainterforkids.R;
+import com.projectclean.magicpainterforkids.analytics.AnalyticsApplication;
 import com.projectclean.magicpainterforkids.billingutils.IabHelper;
 import com.projectclean.magicpainterforkids.billingutils.IabResult;
 import com.projectclean.magicpainterforkids.billingutils.Inventory;
@@ -20,11 +26,35 @@ public abstract class RootActivity  extends AppCompatActivity {
 
     protected IabHelper mHelper;
 
-    protected boolean mNoAds,mAnimalPack1,mAnimalPack2;
+    protected boolean mNoAds, mExtraPack1, mExtraPack2;
 
-    protected String base64EncodedPublicKey  = PaintActivity.stringTransform("jnnenMfie@LVOLN`Pefvbaffhdfvfjnned@ldfvbfLaHmNosSqfWu`NbV~uhHpFasbsDNhNNpsMlB`s_qv^AkfR_W`EqApTPdnbCF~Q`eE]}OkLOdwvOCTvcHeOHL`~ijiilS@vdtiBlN}hADMiVHibTjRTSK@DpQ@SpM~SDTrJvuOPWww}s~RvbRf^SbmQ_mHoWf@TTpM_lDWk]c@KEMrHnju]aqkwNACspr^EhwMS]W}jmt}Bb_d]^}_kiccnevCWwdIMAisnr]IQ}ppPowaoPnFb_cuotLqsWwfWjfneo}Jis~CHrblUq_MTKPncfvfe", 0x27);
+    public static String base64EncodedPublicKey  = PaintActivity.stringTransform("jnnenMfie@LVOLN`\u001EP\u0017efvbaffhdfv\u001Ffjnned@ldfvbfISj^\u0012VrAknmRcC]_J^@hb]r\u0017A\u0011arh\u0017RrKCRF\bqU\u001FNS}\u0012d`Ss\u0017khLa\u0011Whf\u001EQBciafKipE\u001E\u0013u\u001Fpo\u0015O}JoIs\u0017aUA\fdksAqp\u0011\u0012JiemI\u0014\u001F\u0017V\u001FrSwL\u0016ncj`c`Q\fwBfIL@\u007FQd\u0014j\u007F]\u0013l}UoCn\u007FC\u0011\u0011\u0010NqVu^\bMdhkK@\bW\u0017a@\u001Fl^o}dss\u007F\u007FAAH^ao@L_\u0011A\bNBHtk\u0016bUjS\u0015asdR~Rmh\u0012\u001F]\u007FME}aFJm~\bK\u0017\u0014_\u0010\f\u0016TdLD]NfNUsK\u0013SqB\u001EbEKr\u0013FtCrB\u0016nW\b\u0015S\u0016DrVV@SHFLQRm~hJ\u0012\bk~Fhf]BIEoE\u007Fav\u0013pUV\br\u0010\bn\u001FBiPQEU\u0010n\u007F\u0017iefM\u0012\u0011lbLK\u0010QUvmDdML_HFoON`oFOBqaPuf\u0016MPncfvfe", 0x27);
+
+    protected Tracker mTracker;
+
+    public static String MAINACTIVITY = "Main activity",SHOPACTIVITY = "Shop",PAINTACTIVITY = "Paint activity";
+
+    protected void onCreate(Bundle psavedinstancestate){
+        super.onCreate(psavedinstancestate);
+        // Obtain the shared Tracker instance.
+        mTracker = getDefaultTracker();
+    }
+
+    /**
+     * Gets the default {@link Tracker} for this {@link Application}.
+     * @return tracker
+     */
+    synchronized public Tracker getDefaultTracker() {
+        if (mTracker == null) {
+            GoogleAnalytics analytics = GoogleAnalytics.getInstance(this);
+            // To enable debug logging use: adb shell setprop log.tag.GAv4 DEBUG
+            mTracker = analytics.newTracker(R.xml.global_tracker);
+        }
+        return mTracker;
+    }
 
     protected void hideStatusBar(){
+
         if (Build.VERSION.SDK_INT < 16) {
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
         }else{
@@ -63,24 +93,25 @@ public abstract class RootActivity  extends AppCompatActivity {
                     Toast.makeText(RootActivity.this, "Error, please check your internet connection.", Toast.LENGTH_SHORT);
                     SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
                     mNoAds = sharedPref.getBoolean(ShopActivity.NO_ADS_PRODUCT, false);
-                    mAnimalPack1 = sharedPref.getBoolean(ShopActivity.ANIMAL_PACK_1_PRODUCT, false);
-                    mAnimalPack2 = sharedPref.getBoolean(ShopActivity.ANIMAL_PACK_2_PRODUCT, false);
+                    mExtraPack1 = sharedPref.getBoolean(ShopActivity.EXTRA_PACK_1_PRODUCT, false);
+                    mExtraPack2 = sharedPref.getBoolean(ShopActivity.EXTRA_PACK_2_PRODUCT, false);
                     onPurchasedProductsResult();
                 }
                 else {
+
                    SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
                    SharedPreferences.Editor editor = sharedPref.edit();
                    if (inventory.hasPurchase(ShopActivity.NO_ADS_PRODUCT)){
                        mNoAds = true;
                        editor.putBoolean(ShopActivity.NO_ADS_PRODUCT, mNoAds);
                    }
-                   if (inventory.hasPurchase(ShopActivity.ANIMAL_PACK_1_PRODUCT)){
-                       mAnimalPack1 = true;
-                       editor.putBoolean(ShopActivity.ANIMAL_PACK_1_PRODUCT, mAnimalPack1);
+                   if (inventory.hasPurchase(ShopActivity.EXTRA_PACK_1_PRODUCT)){
+                       mExtraPack1 = true;
+                       editor.putBoolean(ShopActivity.EXTRA_PACK_1_PRODUCT, mExtraPack1);
                    }
-                   if (inventory.hasPurchase(ShopActivity.ANIMAL_PACK_2_PRODUCT)){
-                       mAnimalPack2 = true;
-                       editor.putBoolean(ShopActivity.ANIMAL_PACK_2_PRODUCT, mAnimalPack2);
+                   if (inventory.hasPurchase(ShopActivity.EXTRA_PACK_2_PRODUCT)){
+                       mExtraPack2 = true;
+                       editor.putBoolean(ShopActivity.EXTRA_PACK_2_PRODUCT, mExtraPack2);
                    }
                    onPurchasedProductsResult();
                    editor.commit();

@@ -1,6 +1,7 @@
 package com.projectclean.magicpainterforkids.activities;
 
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -11,7 +12,10 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 import com.projectclean.magicpainterforkids.R;
+import com.projectclean.magicpainterforkids.analytics.AnalyticsApplication;
 import com.projectclean.magicpainterforkids.billingutils.IabHelper;
 import com.projectclean.magicpainterforkids.billingutils.IabResult;
 import com.projectclean.magicpainterforkids.billingutils.Inventory;
@@ -24,7 +28,7 @@ import java.util.List;
 /**
  * Created by Carlos Albaladejo Pérez on 21/03/2016.
  */
-public class ShopActivity extends AppCompatActivity {
+public class ShopActivity extends RootActivity {
 
     ListView mListView;
     IabHelper mHelper;
@@ -33,19 +37,21 @@ public class ShopActivity extends AppCompatActivity {
     private int PRODUCT_PURCHASE = 10001;
 
     public static String NO_ADS_PRODUCT = "mpfk_noads_0001";
-    public static String ANIMAL_PACK_1_PRODUCT = "mpfk_animal_1_0001";
-    public static String ANIMAL_PACK_2_PRODUCT = "mpfk_animal_2_0002";
+    public static String EXTRA_PACK_1_PRODUCT = "mpfk_extra_0001";
+    public static String EXTRA_PACK_2_PRODUCT = "mpfk_extra_0002";
 
     private String mCurrentPayload;
+
+    private boolean mFirstTime;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shop);
 
-        String base64EncodedPublicKey  = PaintActivity.stringTransform("jnnenMfie@LVOLN`Pefvbaffhdfvfjnned@ldfvbfLaHmNosSqfWu`NbV~uhHpFasbsDNhNNpsMlB`s_qv^AkfR_W`EqApTPdnbCF~Q`eE]}OkLOdwvOCTvcHeOHL`~ijiilS@vdtiBlN}hADMiVHibTjRTSK@DpQ@SpM~SDTrJvuOPWww}s~RvbRf^SbmQ_mHoWf@TTpM_lDWk]c@KEMrHnju]aqkwNACspr^EhwMS]W}jmt}Bb_d]^}_kiccnevCWwdIMAisnr]IQ}ppPowaoPnFb_cuotLqsWwfWjfneo}Jis~CHrblUq_MTKPncfvfe", 0x27);
+        mFirstTime = true;
 
         // compute your public key and store it in base64EncodedPublicKey
-        mHelper = new IabHelper(this, base64EncodedPublicKey);
+        mHelper = new IabHelper(this, RootActivity.base64EncodedPublicKey);
 
         mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
             public void onIabSetupFinished(IabResult result) {
@@ -59,6 +65,7 @@ public class ShopActivity extends AppCompatActivity {
         });
 
         mListView = (ListView)findViewById(R.id.shop_listview);
+        mListView.setEmptyView(findViewById(R.id.empty_textview));
 
         mAdapter = new ShopListAdapter();
         mListView.setAdapter(mAdapter);
@@ -66,21 +73,28 @@ public class ShopActivity extends AppCompatActivity {
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                purchaseProduct(((ProductNode)mAdapter.getItem(position)).ID);
+                purchaseProduct(((ProductNode) mAdapter.getItem(position)).ID);
             }
         });
-
-
     }
 
     public void onResume(){
         super.onResume();
 
-        //mAdapter.clear();
-        //getAllProducts();
+        if (!mFirstTime) {
+            mAdapter.clear();
+            getAllProducts();
+        }else{
+            mTracker.setScreenName(RootActivity.SHOPACTIVITY);
+            mTracker.send(new HitBuilders.ScreenViewBuilder().build());
+        }
+        mFirstTime = false;
     }
 
     public void purchaseProduct(String pid){
+
+        sendBuyEventEvent(pid);
+
         IabHelper.OnIabPurchaseFinishedListener mPurchaseFinishedListener
                 = new IabHelper.OnIabPurchaseFinishedListener() {
             public void onIabPurchaseFinished(IabResult result, Purchase purchase)
@@ -126,8 +140,16 @@ public class ShopActivity extends AppCompatActivity {
                     return;
                 }
 
-                /*if (inventory.hasPurchase("android.test.purchased")) {
-                    mHelper.consumeAsync(inventory.getPurchase("android.test.purchased"),null);
+                /*if (inventory.hasPurchase(NO_ADS_PRODUCT)) {
+                    mHelper.consumeAsync(inventory.getPurchase(NO_ADS_PRODUCT),null);
+                }
+
+                if (inventory.hasPurchase(EXTRA_PACK_1_PRODUCT)) {
+                    mHelper.consumeAsync(inventory.getPurchase(EXTRA_PACK_1_PRODUCT),null);
+                }
+
+                if (inventory.hasPurchase(EXTRA_PACK_2_PRODUCT)) {
+                    mHelper.consumeAsync(inventory.getPurchase(EXTRA_PACK_2_PRODUCT),null);
                 }*/
 
                 /*String applePrice = inventory.getSkuDetails(SKU_APPLE).getPrice();
@@ -142,8 +164,8 @@ public class ShopActivity extends AppCompatActivity {
 
         List additionalSkuList = new LinkedList();
         additionalSkuList.add(NO_ADS_PRODUCT);
-        additionalSkuList.add(ANIMAL_PACK_1_PRODUCT);
-        additionalSkuList.add(ANIMAL_PACK_2_PRODUCT);
+        additionalSkuList.add(EXTRA_PACK_1_PRODUCT);
+        additionalSkuList.add(EXTRA_PACK_2_PRODUCT);
 
         mHelper.queryInventoryAsync(true, additionalSkuList,mQueryFinishedListener);
     }
@@ -167,18 +189,18 @@ public class ShopActivity extends AppCompatActivity {
                         }
                     }
 
-                    if (!inventory.hasPurchase(ANIMAL_PACK_1_PRODUCT)) {
-                        SkuDetails details = pproducts.getSkuDetails(ANIMAL_PACK_1_PRODUCT);
+                    if (!inventory.hasPurchase(EXTRA_PACK_1_PRODUCT)) {
+                        SkuDetails details = pproducts.getSkuDetails(EXTRA_PACK_1_PRODUCT);
                         if (details != null) {
-                            ProductNode newProduct = new ProductNode(ANIMAL_PACK_1_PRODUCT, details.getDescription(), details.getTitle(), details.getPrice(), -1);
+                            ProductNode newProduct = new ProductNode(EXTRA_PACK_1_PRODUCT, details.getDescription(), details.getTitle(), details.getPrice(), -1);
                             mAdapter.addItem(newProduct);
                         }
                     }
 
-                    if (!inventory.hasPurchase(ANIMAL_PACK_2_PRODUCT)) {
-                        SkuDetails details = pproducts.getSkuDetails(ANIMAL_PACK_2_PRODUCT);
+                    if (!inventory.hasPurchase(EXTRA_PACK_2_PRODUCT)) {
+                        SkuDetails details = pproducts.getSkuDetails(EXTRA_PACK_2_PRODUCT);
                         if (details != null) {
-                            ProductNode newProduct = new ProductNode(ANIMAL_PACK_2_PRODUCT, details.getDescription(), details.getTitle(), details.getPrice(), -1);
+                            ProductNode newProduct = new ProductNode(EXTRA_PACK_2_PRODUCT, details.getDescription(), details.getTitle(), details.getPrice(), -1);
                             mAdapter.addItem(newProduct);
                         }
                     }
@@ -190,10 +212,15 @@ public class ShopActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (mHelper != null) mHelper.dispose();
-        mHelper = null;
+    public void onPurchasedProductsResult() {
+
+    }
+
+    public void sendBuyEventEvent(String pboughtproduct){
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory("Action")
+                .setAction("Product: " + pboughtproduct)
+                .build());
     }
 
     public class ShopListAdapter extends BaseAdapter{
@@ -240,12 +267,14 @@ public class ShopActivity extends AppCompatActivity {
 
                 ViewHolder v = new ViewHolder();
                 v.TITLE = (TextView)convertView.findViewById(R.id.item_title);
+                v.DESCRIPTION = (TextView)convertView.findViewById(R.id.item_description);
                 convertView.setTag(v);
             }
 
             ViewHolder holder = (ViewHolder)convertView.getTag();
 
             holder.TITLE.setText(p.TITLE);
+            holder.DESCRIPTION.setText(p.DESCRIPTION);
 
             return convertView;
         }
@@ -253,6 +282,7 @@ public class ShopActivity extends AppCompatActivity {
 
     public class ViewHolder{
         public TextView TITLE;
+        public TextView DESCRIPTION;
     }
 
     public class ProductNode{

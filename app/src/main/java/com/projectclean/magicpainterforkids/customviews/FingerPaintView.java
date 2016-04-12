@@ -188,8 +188,13 @@ public class FingerPaintView extends View {
 
         mCanvas.drawPath(mPath, mPaint);
 
+        if (mSrcRectangle == null || mDstRectangle == null){
+            mDstRectangle = new Rect(0,0,mOldWidth,mOldHeight);
+            mSrcRectangle = new Rect(0,0,mOldWidth/SAMPLE_SIZE,mOldHeight/SAMPLE_SIZE);
+        }
 
         canvas.drawBitmap(mBitmap, mSrcRectangle, mDstRectangle, mBitmapPaint);
+
 
         //canvas.drawBitmap(mBitmap,0,0,mBitmapPaint);
     }
